@@ -4,24 +4,30 @@
 <head>
     <meta charset="UTF-8">
     <title>Quiz Result</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
-    <h1>Quiz Completed</h1>
-    <p>Your Score: {{ score }} / {{ total }}</p>
+    <div class="container">
+        <h1>Quiz Result</h1>
+        <div class="result-score">
+            Your Score: {{ score }} / {{ total }}
+        </div>
 
-    <h2>Review Your Answers:</h2>
-    <ul>
-        {% for ans in answers %}
-        <li>
-            <strong>{{ ans.question }}</strong><br>
-            Your Answer: {{ ans.selected if ans.selected else "No Answer" }}<br>
-            Correct Answer: {{ ans.correct }}
-        </li>
-        {% endfor %}
-    </ul>
-
-    <a href="/">Try Again</a>
+        <div class="review">
+            <h2>Review Your Answers:</h2>
+            <ul>
+                {% for ans in answers %}
+                <li>
+                    <strong>{{ ans.question }}</strong><br>
+                    <span>Your Answer: {{ ans.selected if ans.selected else "No Answer" }}</span><br>
+                    <span>Correct Answer: {{ ans.correct }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        <a href="/"><button>Try Again</button></a>
+    </div>
 </body>
 
 </html>

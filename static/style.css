@@ -1,0 +1,84 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f6f9;
+    margin: 0;
+    padding: 0;
+    color: #333;
+}
+
+.container {
+    max-width: 800px;
+    margin: 40px auto;
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    text-align: center;
+    color: #222;
+}
+
+.question-block {
+    margin-bottom: 25px;
+}
+
+.question-block p {
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+label {
+    display: block;
+    padding: 5px 10px;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    background-color: #f2f2f2;
+    transition: background-color 0.2s ease-in-out;
+}
+
+input[type="radio"] {
+    margin-right: 10px;
+}
+
+label:hover {
+    background-color: #e6e6e6;
+}
+
+button {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    font-size: 16px;
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+.result-score {
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    margin-top: 20px;
+    color: #2c3e50;
+}
+
+.review {
+    margin-top: 20px;
+}
+
+.review li {
+    margin-bottom: 15px;
+    list-style: none;
+    padding: 10px;
+    background-color: #fdfdfd;
+    border-left: 4px solid #4CAF50;
+    border-radius: 6px;
+}
