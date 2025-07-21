@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Quiz Result</title>
+</head>
+
+<body>
+    <h1>Quiz Completed</h1>
+    <p>Your Score: {{ score }} / {{ total }}</p>
+
+    <h2>Review Your Answers:</h2>
+    <ul>
+        {% for ans in answers %}
+        <li>
+            <strong>{{ ans.question }}</strong><br>
+            Your Answer: {{ ans.selected if ans.selected else "No Answer" }}<br>
+            Correct Answer: {{ ans.correct }}
+        </li>
+        {% endfor %}
+    </ul>
+
+    <a href="/">Try Again</a>
+</body>
+
+</html>
