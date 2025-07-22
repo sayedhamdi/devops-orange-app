@@ -20,7 +20,18 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt # Assumes requirements.txt exists
+          pip install flake8 # Install flake8 for linting
           pytest || echo "No tests found or tests passed." # Run tests, continue if no tests
+
+      - name: Lint and Basic App Check
+        # This step performs linting on app.py and attempts to import it
+        # to catch basic syntax or runtime errors before deployment.
+        run: |
+          echo "Running Flake8 linting on app.py..."
+          flake8 app.py --max-line-length=120 # Adjust max-line-length as needed
+
+          echo "Attempting to import app.py to check for basic runtime issues..."
+          python3 -c "import app; print('app.py imported successfully without immediate errors.')"
 
   # Stage 2: Deploy to GCP VM (No Docker, No Gunicorn/Venv)
   deploy:
@@ -51,7 +62,6 @@ jobs:
             APP_DIR="/home/sayedhamdi30/devops-orange-app"
 
             # Install necessary system packages (git, python3-pip)
-            # Removed python3-venv and gunicorn as per your request
             sudo apt update && sudo apt install -y git python3-pip
 
             # Clone or pull the repository
@@ -67,14 +77,11 @@ jobs:
             cd "$APP_DIR"
 
             # Install Python dependencies globally for the system's python3
-            # WARNING: This can lead to dependency conflicts for other Python apps.
             echo "Installing Python dependencies from requirements.txt globally..."
             sudo pip3 install --upgrade pip
             sudo pip3 install -r requirements.txt
 
             # Reload systemd daemon and restart the Flask app service
-            # Assumes flask_quiz_app.service is already correctly configured
-            # to use 'python3 app.py' in the WorkingDirectory.
             echo "Reloading systemd daemon and restarting flask_quiz_app service..."
             sudo systemctl daemon-reload && sudo systemctl restart flask_quiz_app
             echo "--- Deployment complete ---"

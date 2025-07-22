@@ -27,7 +27,7 @@ questions = [
 ]
 
 # Add dummy questions until we have 20
-    while len(questions) < 20:
+while len(questions) < 20:
     questions.append({
         "question": f"Sample Question {len(questions) + 1}?",
         "options": ["Option A", "Option B", "Option C", "Option D"],
