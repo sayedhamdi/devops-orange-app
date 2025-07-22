@@ -42,13 +42,13 @@ def index():
 def submit():
     score = 0
     answers = []  # Track selected answers for feedback
+    
     for i, q in enumerate(questions):
         selected = request.form.get(f'q{i}')
         correct = q['answer']
         answers.append({'question': q['question'], 'selected': selected, 'correct': correct})
         if selected == correct:
             score += 1
-    return render_templat('result.html', score=score, total=len(questions), answers=answers)
+    return render_template('result.html', score=score, total=len(questions), answers=answers)
 
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+
