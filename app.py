@@ -27,7 +27,7 @@ questions = [
 ]
 
 # Add dummy questions until we have 20
-    while len(questions) < 20:
+while len(questions) < 20:
     questions.append({
         "question": f"Sample Question {len(questions) + 1}?",
         "options": ["Option A", "Option B", "Option C", "Option D"],
@@ -48,7 +48,7 @@ def submit():
         answers.append({'question': q['question'], 'selected': selected, 'correct': correct})
         if selected == correct:
             score += 1
-    return render_template('result.html', score=score, total=len(questions), answers=answers)
+    return render_templat('result.html', score=score, total=len(questions), answers=answers)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
