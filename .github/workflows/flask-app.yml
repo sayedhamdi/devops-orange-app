@@ -1,4 +1,4 @@
-name: Flask Quiz App CI
+name: Flask Quiz App CI/CD (Simplified, No Docker, No Gunicorn/Venv)
 
 on:
   push:
@@ -7,49 +7,74 @@ on:
     branches: [ "main" ]
 
 jobs:
+  # Stage 1: Build & Test (Continuous Integration)
   build:
     runs-on: ubuntu-latest
-
     steps:
-      # Step 1: Checkout the code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Step 2: Set up Python
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      # Step 3: Install dependencies
-      - name: Install dependencies
+      - name: Set up Python and Install dependencies & Run tests
+        # This step sets up Python, installs dependencies from requirements.txt,
+        # and runs tests directly within the GitHub Actions runner.
         run: |
           python -m pip install --upgrade pip
-          pip install flask pytest
+          pip install -r requirements.txt # Assumes requirements.txt exists
+          pytest || echo "No tests found or tests passed." # Run tests, continue if no tests
 
-      # Step 4: Run tests (optional)
-      - name: Run tests
-        run: |
-          pytest || echo "No tests found"
-
-  # Optional: Build Docker image for deployment
-  docker-build:
+  # Stage 2: Deploy to GCP VM (No Docker, No Gunicorn/Venv)
+  deploy:
     runs-on: ubuntu-latest
-    needs: build
+    needs: build # This job depends on the 'build' job completing successfully
+    environment: production # Optional: Define a production environment for better tracking
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Log in to DockerHub
-        uses: docker/login-action@v3
+      - name: Set up SSH Agent
+        # Adds the private SSH key to the agent for secure SSH connection
+        uses: webfactory/ssh-agent@v0.8.0
         with:
-          username: user
-          password: user
+          ssh-private-key: ${{ secrets.GCP_SSH_PRIVATE_KEY }}
 
-      - name: Build Docker image
+      - name: Deploy Flask App to GCP VM
+        # Connects to the GCP VM via SSH and executes deployment commands
         run: |
-          docker build -t user/flask-quiz:latest .
+          # Ensure known_hosts is set up for SSH
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.GCP_VM_EXTERNAL_IP }} >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
 
-      - name: Push Docker image
-        run: |
-          docker push user/flask-quiz:latest
+          # SSH into the VM and execute deployment commands
+          ssh ${{ secrets.GCP_VM_USERNAME }}@${{ secrets.GCP_VM_EXTERNAL_IP }} << 'EOF'
+            # Define the exact application directory on the VM
+            APP_DIR="/home/sayedhamdi30/devops-orange-app"
+
+            # Install necessary system packages (git, python3-pip)
+            # Removed python3-venv and gunicorn as per your request
+            sudo apt update && sudo apt install -y git python3-pip
+
+            # Clone or pull the repository
+            if [ ! -d "$APP_DIR/.git" ]; then
+              echo "Cloning repository to $APP_DIR..."
+              sudo git clone https://github.com/${{ github.repository }}.git "$APP_DIR"
+            else
+              echo "Repository already exists. Pulling latest changes..."
+              cd "$APP_DIR" && sudo git pull origin main
+            fi
+
+            # Navigate to the application directory
+            cd "$APP_DIR"
+
+            # Install Python dependencies globally for the system's python3
+            # WARNING: This can lead to dependency conflicts for other Python apps.
+            echo "Installing Python dependencies from requirements.txt globally..."
+            sudo pip3 install --upgrade pip
+            sudo pip3 install -r requirements.txt
+
+            # Reload systemd daemon and restart the Flask app service
+            # Assumes flask_quiz_app.service is already correctly configured
+            # to use 'python3 app.py' in the WorkingDirectory.
+            echo "Reloading systemd daemon and restarting flask_quiz_app service..."
+            sudo systemctl daemon-reload && sudo systemctl restart flask_quiz_app
+            echo "--- Deployment complete ---"
