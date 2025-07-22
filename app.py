@@ -42,7 +42,6 @@ def index():
 def submit():
     score = 0
     answers = []  # Track selected answers for feedback
-    
     for i, q in enumerate(questions):
         selected = request.form.get(f'q{i}')
         correct = q['answer']
