@@ -62,7 +62,7 @@ jobs:
           chmod 600 ~/.ssh/known_hosts
 
           echo "Starting remote deployment..."
-          ssh ${{ secrets.GCP_VM_USERNAME }}@${{ secrets.GCP_VM_EXTERNAL_IP }} << 'EOF'
+          ssh ${{ secrets.GCP_VM_USERNAME }}@${{ secrets.GCP_VM_EXTERNAL_IP }}
             APP_DIR="/home/${USER}/devops-orange-app"
 
             echo "--- Updating system packages ---"
