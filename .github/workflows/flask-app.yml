@@ -7,95 +7,82 @@ on:
     branches: [ "main" ]
 
 jobs:
-  # Stage 1: Build & Test (Continuous Integration)
+  # ---------------------
+  # Stage 1: Build & Test
+  # ---------------------
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python and Install dependencies & Run tests
-        # This step sets up Python, installs dependencies from requirements.txt,
-        # and runs tests directly within the GitHub Actions runner.
+      - name: Set up Python, Install dependencies, Run tests
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt # Assumes requirements.txt exists
-          pip install flake8 # Install flake8 for linting
-          pytest || echo "No tests found or tests passed." # Run tests, continue if no tests
+          pip install -r requirements.txt
+          pip install flake8 pytest
 
-      - name: Lint and Basic App Check
-        # This step performs linting on app.py and attempts to import it
-        # to catch basic syntax or runtime errors before deployment.
-        run: |
-          echo "Running Flake8 linting on app.py with simplified rules..."
-          # Ignoring E501 (line too long), E302 (expected 2 blank lines), E305 (expected 2 blank lines after class/func)
+          echo "Running lint checks..."
           flake8 app.py --ignore=E501,E302,E305
 
-          echo "Attempting to import app.py to check for basic runtime issues..."
-          python3 -c "import app; print('app.py imported successfully without immediate errors.')"
+          echo "Running pytest..."
+          pytest || echo "No tests found or all tests passed."
 
-      - name: Test App Startup
-        # Attempts to run the Flask app for a short period to catch startup errors.
-        # This simulates the ExecStart command on the VM.
+      - name: Basic App Check
         run: |
-          echo "Attempting to start Flask app for a brief moment to check for immediate errors..."
-          # Run the app in the background, capture its PID, wait, then kill it.
-          # The '|| true' after kill ensures the step doesn't fail if the process
-          # already exited (e.g., due to an error) before the kill command.
-          python3 app.py & PID=$!
-          sleep 5 # Give the app a few seconds to start up or throw an error
-          kill $PID || true
-          echo "Flask app started and terminated successfully (or exited with an error captured by the previous command)."
+          echo "Checking app.py import..."
+          python3 -c "import app; print('app.py imported successfully.')"
 
-  # Stage 2: Deploy to GCP VM (No Docker, No Gunicorn/Venv)
+          echo "Test running Flask app briefly..."
+          python3 app.py & PID=$!
+          sleep 5
+          kill $PID || true
+
+  # ---------------------
+  # Stage 2: Deploy
+  # ---------------------
   deploy:
     runs-on: ubuntu-latest
-    needs: build # This job depends on the 'build' job completing successfully
-    environment: production # Optional: Define a production environment for better tracking
+    needs: build
+    environment: production
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up SSH Agent
-        # Adds the private SSH key to the agent for secure SSH connection
         uses: webfactory/ssh-agent@v0.8.0
         with:
           ssh-private-key: ${{ secrets.GCP_SSH_PRIVATE_KEY }}
 
       - name: Deploy Flask App to GCP VM
-        # Connects to the GCP VM via SSH and executes deployment commands
         run: |
-          # Ensure known_hosts is set up for SSH
+          echo "Setting up known_hosts..."
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.GCP_VM_EXTERNAL_IP }} >> ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
-          # SSH into the VM and execute deployment commands
+          echo "Starting remote deployment..."
           ssh ${{ secrets.GCP_VM_USERNAME }}@${{ secrets.GCP_VM_EXTERNAL_IP }} << 'EOF'
-            # Define the exact application directory on the VM
-            APP_DIR="/home/sayedhamdi30/devops-orange-app"
+            APP_DIR="/home/${USER}/devops-orange-app"
 
-            # Install necessary system packages (git, python3-pip)
+            echo "--- Updating system packages ---"
             sudo apt update && sudo apt install -y git python3-pip
 
-            # Clone or pull the repository
             if [ ! -d "$APP_DIR/.git" ]; then
-              echo "Cloning repository to $APP_DIR..."
+              echo "--- Cloning repository to $APP_DIR ---"
               sudo git clone https://github.com/${{ github.repository }}.git "$APP_DIR"
             else
-              echo "Repository already exists. Pulling latest changes..."
+              echo "--- Repository exists, pulling latest changes ---"
               cd "$APP_DIR" && sudo git pull origin main
             fi
 
-            # Navigate to the application directory
             cd "$APP_DIR"
-
-            # Install Python dependencies globally for the system's python3
-            echo "Installing Python dependencies from requirements.txt globally..."
+            echo "--- Installing Python dependencies ---"
             sudo pip3 install --upgrade pip
             sudo pip3 install -r requirements.txt
 
-            # Reload systemd daemon and restart the Flask app service
-            echo "Reloading systemd daemon and restarting flask_quiz_app service..."
-            sudo systemctl daemon-reload && sudo systemctl restart flask_quiz_app
+            echo "--- Restarting Flask systemd service ---"
+            sudo systemctl daemon-reload
+            sudo systemctl restart flask_quiz_app
             echo "--- Deployment complete ---"
+
